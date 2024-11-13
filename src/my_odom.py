@@ -9,9 +9,10 @@ from tf.transformations import euler_from_quaternion
 class MyOdom:
     def __init__(self):
         self.roba_odom_sub = rospy.Subscriber('/roba/odom', Odometry, self.roba_odom_cb)
-        self.roba_my_odom_pub = rospy.Publisher('/roba/my_odom', Point, queue_size=1)
+        self.roba_my_odom_pub = rospy.Publisher('my_odom', Point, queue_size=1)
         self.robb_odom_sub = rospy.Subscriber('/robb/odom', Odometry, self.robb_odom_cb)
-        self.robb_my_odom_pub = rospy.Publisher('/robb/my_odom', Point, queue_size=1)
+        self.robb_my_odom_pub = rospy.Publisher('my_odom', Point, queue_size=1)
+
         self.roba_old_pose = None 
         self.roba_dist = 0.0
         self.roba_yaw = 0.0
@@ -36,7 +37,7 @@ class MyOdom:
         if self.roba_old_pose is not None:
             x_diff = cur_pose.position.x - self.roba_old_pose.position.x
             y_diff = cur_pose.position.y - self.roba_old_pose.position.y
-            self.roba_dist = math.sqrt(x_diff ** 2 + y_diff ** 2)
+            self.roba_dist += math.sqrt(x_diff ** 2 + y_diff ** 2)
         self.roba_old_pose = cur_pose
 
     def roba_update_yaw(self, cur_orientation):
@@ -66,6 +67,7 @@ class MyOdom:
         data = Point()
         data.x = self.roba_dist
         data.y = self.roba_yaw
+        data.z = self.robb_dist
         self.roba_my_odom_pub.publish(data)
 
     def robb_odom_cb(self, msg):
@@ -84,7 +86,7 @@ class MyOdom:
         if self.robb_old_pose is not None:
             x_diff = cur_pose.position.x - self.robb_old_pose.position.x
             y_diff = cur_pose.position.y - self.robb_old_pose.position.y
-            self.robb_dist = math.sqrt(x_diff ** 2 + y_diff ** 2)
+            self.robb_dist += math.sqrt(x_diff ** 2 + y_diff ** 2)
         self.robb_old_pose = cur_pose
 
     def robb_update_yaw(self, cur_orientation):
@@ -112,13 +114,14 @@ class MyOdom:
         # but simply as a data container for `self.dist` and `self.yaw` so we can
         # publish it on `my_odom`.
         data = Point()
-        data.x = self.robb_dist
-        data.y = self.robb_yaw
+        data.x = self.roba_dist
+        data.y = self.roba_yaw
+        data.z = self.robb_dist
+        #data.y_b = self.robb_yaw
         self.robb_my_odom_pub.publish(data)
 
 if __name__ == '__main__':
-    rospy.init_node('/roba/my_odom')
-    rospy.init_node('/robb/my_odom')
+    rospy.init_node('my_odom')
 
     MyOdom()
     rospy.spin()

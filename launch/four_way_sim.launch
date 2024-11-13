@@ -7,7 +7,7 @@
   <arg name="x_pos_robb" default="1.5"/>
   <arg name="y_pos_robb" default="1.5"/>
   <arg name="z_pos_robb" default="0.0"/>
-  <arg name="yaw_pos_robb" default="-1.7"/>
+  <arg name="yaw_pos_robb" default="-1.57"/>
 
   
 

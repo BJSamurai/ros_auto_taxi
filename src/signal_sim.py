@@ -10,7 +10,8 @@ class SignalSim:
         self.signal_pub = rospy.Publisher('signal_sim', Bool, queue_size = 1)
         self.cur_signal = False
 
-        self.timer = rospy.Timer(rospy.Duration(5), self.timer_callback)
+        # Decide the signal interval
+        self.timer = rospy.Timer(rospy.Duration(15), self.timer_callback)
                 
     def signal_cb(self, msg):
         """Callback function for `odom_sub`."""
