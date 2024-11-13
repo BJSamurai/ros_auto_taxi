@@ -14,9 +14,14 @@ import numpy as np
 class FourWaySim:
     def __init__(self):
 
-        self.scan_sub = rospy.Subscriber('/scan', LaserScan, self.scan_cb)
-        self.my_odom_sub = rospy.Subscriber('my_odom', Point, self.my_odom_cb)
-        self.cmd_vel_pub = rospy.Publisher('/cmd_vel', Twist, queue_size=1)
+        self.roba_scan_sub = rospy.Subscriber('/roba/scan', LaserScan, self.roba_scan_cb)
+        self.roba_my_odom_sub = rospy.Subscriber('/roba/my_odom', Point, self.roba_my_odom_cb)
+        self.roba_cmd_vel_pub = rospy.Publisher('/roba/cmd_vel', Twist, queue_size=1)
+
+        self.robb_scan_sub = rospy.Subscriber('/robb/scan', LaserScan, self.robb_scan_cb)
+        self.robb_my_odom_sub = rospy.Subscriber('/robb/my_odom', Point, self.robb_my_odom_cb)
+        self.robb_cmd_vel_pub = rospy.Publisher('/robb/cmd_vel', Twist, queue_size=1)
+
         self.signal_sub = rospy.Subscriber('signal_sim', Bool, self.signal_cb)
 
         self.centroid_image = None
@@ -30,27 +35,40 @@ class FourWaySim:
             'avoiding_obstacle': False,
         }
 
-    def my_odom_cb(self, msg):
-        """Callback to `self.my_odom_sub`."""
-        #raise NotImplementedError
-
     def signal_cb(self, msg):
         """Callback to 'self.signal_sub'. """
         self.cur_signal = msg.data
 
+    def roba_my_odom_cb(self, msg):
+        """Callback to `self.my_odom_sub`."""
+        #raise NotImplementedError
 
-    def scan_cb(self, msg):
+
+    def roba_scan_cb(self, msg):
+        """Callback function for `self.scan_sub`."""
+        #raise NotImplementedError
+
+    def robb_my_odom_cb(self, msg):
+        """Callback to `self.my_odom_sub`."""
+        #raise NotImplementedError
+
+
+    def robb_scan_cb(self, msg):
         """Callback function for `self.scan_sub`."""
         #raise NotImplementedError
 
     def move(self):
-        twist = Twist()
+        roba_twist = Twist()
+        robb_twist = Twist()
         if self.cur_signal:
-            twist.linear.x = 0.2
+            roba_twist.linear.x = 0.2
+            robb_twist.linear.x = 0.0
         else:
-            twist.linear.x = 0.0
+            roba_twist.linear.x = 0.0
+            robb_twist.linear.x = 0.2
 
-        self.cmd_vel_pub.publish(twist)
+        self.roba_cmd_vel_pub.publish(roba_twist)
+        self.robb_cmd_vel_pub.publish(robb_twist)
             
   
         
