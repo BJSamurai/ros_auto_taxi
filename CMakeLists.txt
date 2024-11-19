@@ -13,6 +13,9 @@ find_package(catkin REQUIRED COMPONENTS
   message_runtime
   rospy
   dynamic_reconfigure
+  aruco_detect
+  fiducial_msgs
+  fiducial_slam
 )
 
 ## System dependencies are found with CMake's conventions
@@ -73,6 +76,7 @@ find_package(catkin REQUIRED COMPONENTS
 # generate_messages(
 #   DEPENDENCIES
 #   std_msgs  # Or other packages containing msgs
+#   fiducial_msgs
 # )
 
 ################################################
@@ -108,7 +112,7 @@ find_package(catkin REQUIRED COMPONENTS
 catkin_package(
 #  INCLUDE_DIRS include
 #  LIBRARIES ROS_Auto_Taxi
-#  CATKIN_DEPENDS cv_bridge message_generation message_runtime rospy
+#  CATKIN_DEPENDS cv_bridge message_generation message_runtime rospy aruco_detect fiducial_msgs fiducial_slam
 #  DEPENDS system_lib
 )
 
