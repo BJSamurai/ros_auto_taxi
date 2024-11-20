@@ -13,7 +13,7 @@ class MyOdom:
         self.robb_odom_sub = rospy.Subscriber('/robb/odom', Odometry, self.robb_odom_cb)
         
         # Single publisher for Point[] message
-        self.my_odom_pub = rospy.Publisher('my_odom', Point[], queue_size=1)
+        self.my_odom_pub = rospy.Publisher('my_odom', PointArray, queue_size=1)
 
         # Tracking variables for each robot
         self.roba_old_pose = None 

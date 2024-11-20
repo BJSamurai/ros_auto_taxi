@@ -16,12 +16,12 @@ class FourWaySim:
 
         # roba
         self.roba_scan_sub = rospy.Subscriber('/roba/scan', LaserScan, self.roba_scan_cb)
-        self.roba_my_odom_sub = rospy.Subscriber('my_odom', Point, self.roba_my_odom_cb)
+        self.roba_my_odom_sub = rospy.Subscriber('my_odom', PointArray, self.roba_my_odom_cb)
         self.roba_cmd_vel_pub = rospy.Publisher('/roba/cmd_vel', Twist, queue_size=1)
 
         # robb
         self.robb_scan_sub = rospy.Subscriber('/robb/scan', LaserScan, self.robb_scan_cb)
-        self.robb_my_odom_sub = rospy.Subscriber('my_odom', Point, self.robb_my_odom_cb)
+        self.robb_my_odom_sub = rospy.Subscriber('my_odom', PointArray, self.robb_my_odom_cb)
         self.robb_cmd_vel_pub = rospy.Publisher('/robb/cmd_vel', Twist, queue_size=1)
 
         # Signal Related
@@ -54,8 +54,9 @@ class FourWaySim:
 
     def roba_my_odom_cb(self, msg):
         """Callback to `self.my_odom_sub`."""
-        cur_data_roba = msg
-        self.roba_dist = cur_data_roba.x
+        # msg.points[0] contains roba data
+        self.roba_dist = msg.points[0].x  # roba distance
+        self.roba_yaw = msg.points[0].y   # roba yaw if needed
         #raise NotImplementedError
 
 
@@ -65,8 +66,9 @@ class FourWaySim:
 
     def robb_my_odom_cb(self, msg):
         """Callback to `self.my_odom_sub`."""
-        cur_data_robb = msg
-        self.robb_dist = cur_data_robb.z
+        # msg.points[1] contains robb data
+        self.robb_dist = msg.points[1].x  # robb distance
+        self.robb_yaw = msg.points[1].y   # robb yaw if needed
         #raise NotImplementedError
 
 
@@ -104,7 +106,7 @@ class FourWaySim:
         else:
             if (self.roba_indi) and (not self.roba_indi_two):
                 roba_twist.linear.x = 0.0
-            if (self.roba_indi):
+            if (self.robb_indi):
                 robb_twist.linear.x = 0.2
 
         self.roba_cmd_vel_pub.publish(roba_twist)

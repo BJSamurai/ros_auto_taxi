@@ -56,6 +56,7 @@ find_package(catkin REQUIRED COMPONENTS
 #   FILES
 #   Message1.msg
 #   Message2.msg
+#   PointArray.msg
 # )
 
 ## Generate services in the 'srv' folder
@@ -77,6 +78,7 @@ find_package(catkin REQUIRED COMPONENTS
 #   DEPENDENCIES
 #   std_msgs  # Or other packages containing msgs
 #   fiducial_msgs
+#   geometry_msgs
 # )
 
 ################################################

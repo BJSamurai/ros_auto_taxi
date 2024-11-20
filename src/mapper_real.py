@@ -79,6 +79,6 @@ if __name__ == '__main__':
     rospy.init_node('mapper')
     mapper = Mapper()
     # The ids of the fiducials the `Mapper` instance should map.
-    fid_ids = [101, 106, 107, 109]
+    fid_ids = [101]
     mapper.set_pins(fid_ids)
     mapper.run()
