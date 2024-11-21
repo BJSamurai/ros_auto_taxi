@@ -9,7 +9,7 @@
       <arg name="image" value="image" />
   </include>
 
-  <node name="mapper" pkg="ROS_Auto_Taxi" type="mapper_real.py" output="screen" />
-  <node name="my_odom" pkg="ROS_Auto_Taxi" type="my_odom_solo.py" output="screen" />
-  <node name="signal" pkg="ROS_Auto_Taxi" type="signal_sim.py" output="screen" />
+  <node name="mapper" pkg="ros_Auto_Taxi" type="mapper_real.py" output="screen" />
+  <node name="my_odom" pkg="ros_Auto_Taxi" type="my_odom_solo.py" output="screen" />
+  <node name="signal" pkg="ros_Auto_Taxi" type="signal_sim.py" output="screen" />
 </launch>
