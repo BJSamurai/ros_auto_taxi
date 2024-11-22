@@ -6,11 +6,16 @@ import cv2 as cv
 import cv_bridge
 import numpy
 from sensor_msgs.msg import CompressedImage, LaserScan
-from geometry_msgs.msg import Twist, Point
+from geometry_msgs.msg import Twist, Point, TransformStamped
 from matplotlib import pyplot as plt
 from std_msgs.msg import String, Bool, Float32MultiArray
 import numpy as np
 from fiducial_msgs.msg import FiducialTransformArray
+from tf.transformations import quaternion_from_euler
+from mapper_real import Mapper
+
+# Potential bugs:
+# 1. When robot is facing 2nd signal, and leaving 1st signal
 
 
 class FourWaySim:
@@ -24,58 +29,20 @@ class FourWaySim:
         # Signal Related
         self.signal_sub = rospy.Subscriber('signal_sim', Bool, self.signal_cb)
         self.cur_signal = False
+        self.close_to_signal = False
+        self.facing_signal = False
 
         # tf rostopic
         self.tf_buffer = tf2_ros.Buffer()
         self.tf_listener = tf2_ros.TransformListener(self.tf_buffer)
         self.tf_broadcaster = tf2_ros.TransformBroadcaster()
 
-        # Aruco_detect package rostopic
-        rospy.Subscriber("/fiducial_transforms", FiducialTransformArray, self.fid_cb)
-
         # Initialized Value
-        self.roba_dist = 0.0
-        self.robb_dist = 0.0
+        self.dist = 0.0
+        self.yaw = 0.0
 
-        self.roba_indi = False
-        self.robb_indi = False
-        self.roba_indi_two = False
-        self.robb_indi_two = False
-
-
-
-    def fid_cb(self,msg):
-        '''Callback function for 'fiducial_transforms' '''
-        '''
-            What is contained in msg from 'fiducial_transforms'?
-                # A set of camera to fiducial transform with supporting data corresponding to an image
-                Header header
-                int32 image_seq
-                FiducialTransform[] transforms 
-        '''
-        imageTime = msg.header.stamp
-
-        for m in msg.transforms:
-            id = m.fiducial_id
-            trans = m.transform.translation
-            rot = m.transform.rotation
-
-            # Create a Transform
-            t = TransformStamped()
-            t.child_frame_id = f'pin_{id}'
-            t.header.frame_id = 'odom'
-            t.header.stamp = imageTime
-
-            t.transform.translation.x = trans.x
-            t.transform.translation.y = trans.y
-            t.transform.translation.z = trans.z
-            t.transform.rotation.x = rot.x
-            t.transform.rotation.y = rot.y
-            t.transform.rotation.z = rot.z
-            t.transform.rotation.w = rot.w
-
-            # Publish the tf
-            self.tf_broadcaster.sendTransform(t)
+        # Call mapper_real.py
+        self.mapper = Mapper()
 
     def signal_cb(self, msg):
         """Callback to 'self.signal_sub'. """
@@ -84,8 +51,8 @@ class FourWaySim:
     def roba_my_odom_cb(self, msg):
         """Callback to `self.my_odom_sub`."""
         # msg.points[0] contains roba data
-        self.roba_dist = msg.data[0]  # roba distance
-        self.roba_yaw = msg.data[1]   # roba yaw
+        self.dist = msg.data[0]  # roba distance
+        self.yaw = msg.data[1]   # roba yaw
         #raise NotImplementedError
 
 
@@ -94,49 +61,71 @@ class FourWaySim:
         #raise NotImplementedError
 
     def move(self):
-        roba_twist = Twist()
-        robb_twist = Twist()
-
+        twist = Twist()
         # Default Speed
-        roba_twist.linear.x = 0.2
-        robb_twist.linear.x = 0.2
-        
+        twist.linear.x = 0.1     
 
-        ''' # Demo variables, Cross Intersections.
-        if (self.roba_dist >= 0.75):
-            self.roba_indi = True
+        #Dealing with signal (finished)
+        if (self.close_to_signal is True) and (self.facing_signal is True):
+            if self.cur_signal:
+                twist.linear.x = 0.2
+            else:
+                twist.linear.x = 0.0
 
-
-        if (self.roba_dist >= 1.25):
-            self.roba_indi_two = True
-
-
-        '''
-
-        if self.cur_signal:
-            #if (self.roba_indi):
-                roba_twist.linear.x = 0.2
-
-        else:
-            #if (self.roba_indi) and (not self.roba_indi_two):
-                roba_twist.linear.x = 0.0
+        #Dealing with STOP sign
 
 
-        self.cmd_vel_pub.publish(roba_twist)
+        self.cmd_vel_pub.publish(twist)
+
+    def get_pin_to_robot_position(self, pin_id):
+        """Get x,y position of robot's base_link to pin_id frame"""
+        try:
+            transform = self.tf_buffer.lookup_transform(
+                'base_link',
+                f'pin_{pin_id}', 
+                rospy.Time())
             
-  #roba X 0.8,0.3 robb Y 1.2,0.3
-        
+            x = transform.transform.translation.x
+            y = transform.transform.translation.y
+            
+            return x, y
+       
+        except (tf2_ros.LookupException,
+                tf2_ros.ConnectivityException,
+                tf2_ros.ExtrapolationException) as e:
+            return None
+
+    def signal_notification(self, pin_id):
+        '''Let robot know when it is closing to one of the signal lights'''
+        dist = self.get_pin_to_robot_position(pin_id)
+        threshold = 0.2
+        if dist:
+            x, y = dist
+            #Detect whether is CLOSE to the pin
+            rospy.loginfo(f"Fiducial 110 is at x:{x:.2f}, y:{y:.2f}") 
+            if ((x**2 + y**2) < 0.2): 
+                # The distance to the intersection
+                if (self.close_to_signal is False):
+                    self.close_to_signal = True
+            else:
+                self.close_to_signal = False
+
+            #Detect whether is FACING the pin
+            angle = math.atan2(y, x)
+
+            if (abs(angle) < threshold):
+                if (self.facing_signal is False):
+                    self.facing_signal = True
+            else:
+                self.facing_signal = False
+
     def run(self):
         """Run the program."""
         rate = rospy.Rate(10)
-        
-
         while not rospy.is_shutdown():
+            self.signal_notification(110)
             self.move()
-            rate.sleep()
-
-    #### Calculation of the filtered images
-    
+            rate.sleep()    
            
 if __name__ == '__main__':
     rospy.init_node('four_way_solo')
