@@ -15,7 +15,7 @@ from tf.transformations import quaternion_from_euler
 from mapper_real import Mapper
 
 # Potential bugs:
-# 1. When robot is facing 2nd signal, and leaving 1st signal
+# 1. When robot is facing 2nd signal, and leaving 1st signal, another set of close_to_signal and facing_signal might work
 
 
 class FourWaySim:
