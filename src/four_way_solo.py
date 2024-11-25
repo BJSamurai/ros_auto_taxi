@@ -42,6 +42,7 @@ class FourWaySim:
         self.close_to_stop_sign = False
         self.facing_stop_sign = False
         self.encountered = False
+        self.sleeped = False
 
         # tf rostopic
         self.tf_buffer = tf2_ros.Buffer()
@@ -102,12 +103,14 @@ class FourWaySim:
             if ('roba' in self.stop_car_list):
                 self.stop_car_list.remove('roba')
                 self.cur_cars_count -= 1
+                self.sleeped = False
                 
         self.cmd_vel_pub.publish(twist)
 
     def stop_sign_helper(self):
-        if (self.encountered is True): # Stop for 1.5s when encounter a STOP sign
-            rospy.sleep(1.5)
+            if (self.sleeped is False):
+                rospy.sleep(1.5)
+                self.sleeped = True
             twist = Twist()
 
             if not (self.stop_car_list[0] == 'roba'):
@@ -193,8 +196,10 @@ class FourWaySim:
             self.signal_notification(110)
             self.stop_sign_notification(100)
 
-            self.move()
-            self.stop_sign_helper()
+            if self.encountered and self.facing_stop_sign and self.close_to_stop_sign:
+                self.stop_sign_helper()
+            else:
+                self.move()
 
             rate.sleep()
            
