@@ -1,0 +1,47 @@
+<launch>
+  <arg name="model" default="burger" doc="model type [burger, waffle, waffle_pi]"/>
+  <arg name="x_pos_roba" default="0.0"/>
+  <arg name="y_pos_roba" default="0.5"/>
+  <arg name="z_pos_roba" default="0.0"/>
+  <arg name="yaw_pos_roba" default="0.0"/>
+  <arg name="x_pos_robb" default="1.5"/>
+  <arg name="y_pos_robb" default="1.5"/>
+  <arg name="z_pos_robb" default="0.0"/>
+  <arg name="yaw_pos_robb" default="-1.57"/>
+
+  
+
+  <include file="$(find gazebo_ros)/launch/empty_world.launch">
+    <arg name="world_name" value="$(find ROS_Auto_Taxi)/worlds/four_way.world"/>
+    <arg name="paused" value="false"/>
+    <arg name="use_sim_time" value="true"/>
+    <arg name="gui" value="true"/>
+    <arg name="headless" value="false"/>
+    <arg name="debug" value="false"/>
+  </include>
+
+  <group ns="roba">
+    <param name="robot_description" command="$(find xacro)/xacro $(find turtlebot3_description)/urdf/turtlebot3_$(arg model).urdf.xacro" />
+
+    <node pkg="robot_state_publisher" type="robot_state_publisher" name="robot_state_publisher" output="screen">
+            <param name="publish_frequency" type="double" value="50.0" />
+            <param name="tf_prefix" value="roba" />
+    </node>
+
+    <node pkg="gazebo_ros" type="spawn_model" name="spawn_urdf" args="-urdf -model roba -x $(arg x_pos_roba) -y $(arg y_pos_roba) -z $(arg z_pos_roba) -Y $(arg yaw_pos_roba) -param robot_description" />
+
+  </group>
+
+  <group ns="robb">
+    <param name="robot_description" command="$(find xacro)/xacro $(find turtlebot3_description)/urdf/turtlebot3_$(arg model).urdf.xacro" />
+
+    <node pkg="robot_state_publisher" type="robot_state_publisher" name="robot_state_publisher" output="screen">
+            <param name="publish_frequency" type="double" value="50.0" />
+            <param name="tf_prefix" value="robb" />
+    </node>
+
+    <node pkg="gazebo_ros" type="spawn_model" name="spawn_urdf" args="-urdf -model robb -x $(arg x_pos_robb) -y $(arg y_pos_robb) -z $(arg z_pos_robb) -Y $(arg yaw_pos_robb) -param robot_description" />
+
+  </group>
+</launch>
+
