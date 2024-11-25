@@ -9,7 +9,7 @@ from tf.transformations import euler_from_quaternion
 class MyOdom:
     def __init__(self):
         self.odom_sub = rospy.Subscriber('odom', Odometry, self.odom_cb)
-        self.my_odom_pub = rospy.Publisher('my_odom', Point, queue_size=1)
+        self.my_odom_pub = rospy.Publisher('my_odom', Float32MultiArray, queue_size=1)
         self.old_pose = None 
         self.dist = 0.0
         self.yaw = 0.0
@@ -57,9 +57,8 @@ class MyOdom:
         # The `Point` object we create below is not used as a geometric point,
         # but simply as a data container for `self.dist` and `self.yaw` so we can
         # publish it on `my_odom`.
-        data = Point()
-        data.x = self.dist
-        data.y = self.yaw
+        data = Float32MultiArray()
+        data.data = [self.dist, self.yaw]
         self.my_odom_pub.publish(data)
 
 if __name__ == '__main__':
