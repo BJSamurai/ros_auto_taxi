@@ -1,0 +1,17 @@
+<launch>  
+  <include file="$(find aruco_detect)/launch/aruco_detect.launch">
+      <param name="publish_images" value="true" />
+      <arg name="do_pose_estimation" value="true" />
+      <arg name="vis_msgs" value="false" />
+      <arg name="fiducial_len" value="0.14" />
+      <arg name="dictionary" value="7" />
+      <arg name="camera" value="raspicam_node" />
+      <arg name="image" value="image" />
+  </include>
+
+  <node name="mapper" pkg="ros_auto_taxi" type="mapper_real.py" output="screen" />
+  <node name="my_odom" pkg="ros_auto_taxi" type="my_odom_solo.py" output="screen" />
+  <node name="signal" pkg="ros_auto_taxi" type="signal_sim.py" output="screen" />
+
+
+</launch>
