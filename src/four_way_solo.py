@@ -35,10 +35,13 @@ class FourWaySim:
         # Stop Sign Related
         self.stop_sign_sub = rospy.Subscriber('stop_sign_sim', Int32, self.stop_sign_cb)
         self.stop_sign_pub = rospy.Publisher('stop_sign_sim', Int32, queue_size=1)
+
         self.cur_cars_count = 0
+        self.stop_car_list = []
+
         self.close_to_stop_sign = False
         self.facing_stop_sign = False
-        self.counted = False
+        self.encountered = False
 
         # tf rostopic
         self.tf_buffer = tf2_ros.Buffer()
@@ -72,7 +75,6 @@ class FourWaySim:
         #raise NotImplementedError
 
     def move(self):
-        stop_holder = False
         twist = Twist()
         # Default Speed
         twist.linear.x = 0.1     
@@ -86,16 +88,36 @@ class FourWaySim:
 
         #Dealing with STOP sign
         if (self.close_to_stop_sign is True) and (self.facing_stop_sign is True):
-            if (stop_holder is False): # Stop for 1.5s when encounter a STOP sign
+            if (self.encountered is False): # Stop for 1.5s when encounter a STOP sign
                 twist.linear.x = 0.0
-                rospy.sleep(1.5)
-                stop_holder = True
+                self.encountered = True
+                # Add the car to list
+                self.cur_cars_count += 1
+                self.stop_car_list.append('roba')
             else:
+                return # if still encountering stop sign, break the move(), go to stop_sign_helper()
+        else:
+            self.encountered = False
+            # Remove the car from list
+            if ('roba' in self.stop_car_list):
+                self.stop_car_list.remove('roba')
+                self.cur_cars_count -= 1
                 
-                
-            
-
         self.cmd_vel_pub.publish(twist)
+
+    def stop_sign_helper(self):
+        if (self.encountered is True): # Stop for 1.5s when encounter a STOP sign
+            rospy.sleep(1.5)
+            twist = Twist()
+
+            if not (self.stop_car_list[0] == 'roba'):
+                twist.linear.x = 0.0
+            else:
+                twist.linear.x = 0.2
+
+            self.cmd_vel_pub.publish(twist)
+
+
 
     def get_pin_to_robot_position(self, pin_id):
         """Get x,y position of robot's base_link to pin_id frame"""
@@ -161,12 +183,6 @@ class FourWaySim:
             else:
                 self.facing_stop_sign = False
 
-            if (self.close_to_stop_sign and self.facing_stop_sign):
-                if(self.counted is False):
-                    self.cur_cars_count += 1
-                    stop_sign_pub.publish(self.cur_cars_count)
-                    self.counted = True
-                else:
                     
  
 
@@ -175,8 +191,11 @@ class FourWaySim:
         rate = rospy.Rate(10)
         while not rospy.is_shutdown():
             self.signal_notification(110)
-            self.stop_sign_notification(107)
+            self.stop_sign_notification(100)
+
             self.move()
+            self.stop_sign_helper()
+
             rate.sleep()
            
 if __name__ == '__main__':
