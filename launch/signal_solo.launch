@@ -12,4 +12,6 @@
   <node name="mapper" pkg="ros_auto_taxi" type="mapper_real.py" output="screen" />
   <node name="my_odom" pkg="ros_auto_taxi" type="my_odom_solo.py" output="screen" />
   <node name="signal" pkg="ros_auto_taxi" type="signal_sim.py" output="screen" />
+
+
 </launch>
