@@ -1,4 +1,7 @@
 <launch>  
+  <!-- Remap cmd_vel to cmd_vel_raw - this should be before all nodes -->
+  <remap from="/cmd_vel" to="/cmd_vel_raw"/>
+
   <include file="$(find aruco_detect)/launch/aruco_detect.launch">
       <param name="publish_images" value="true" />
       <arg name="do_pose_estimation" value="true" />
@@ -12,6 +15,8 @@
   <node name="mapper" pkg="ros_auto_taxi" type="mapper_real.py" output="screen" />
   <node name="my_odom" pkg="ros_auto_taxi" type="my_odom_solo.py" output="screen" />
   <node name="signal" pkg="ros_auto_taxi" type="signal_sim.py" output="screen" />
-
+  
+  <!-- Add the velocity controller node -->
+  <node name="velocity_controller" pkg="ros_auto_taxi" type="four_way_solo.py" output="screen" />
 
 </launch>

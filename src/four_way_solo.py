@@ -2,208 +2,127 @@
 import math
 import rospy
 import tf2_ros
-import cv2 as cv
-import cv_bridge
-import numpy
-from sensor_msgs.msg import CompressedImage, LaserScan
-from geometry_msgs.msg import Twist, Point, TransformStamped
-from matplotlib import pyplot as plt
-from std_msgs.msg import String, Bool, Float32MultiArray, Int32
-import numpy as np
-from fiducial_msgs.msg import FiducialTransformArray
-from tf.transformations import quaternion_from_euler
-from mapper_real import Mapper
+from enum import Enum
+from geometry_msgs.msg import PoseStamped
+from std_msgs.msg import Bool, Int32
+from actionlib_msgs.msg import GoalStatusArray, GoalID
+from move_base_msgs.msg import MoveBaseActionGoal
 
-# Potential bugs:
-# 1. When robot is facing 2nd signal, and leaving 1st signal, another set of close_to_signal and facing_signal might work
+class RobotState(Enum):
+    NAVIGATING = 1
+    AT_SIGNAL = 2
+    AT_STOP_SIGN = 3
+    IDLE = 4
 
-
-class FourWaySim:
+class NavigationController:
     def __init__(self):
-
-        # roba
-        self.scan_sub = rospy.Subscriber('scan', LaserScan, self.roba_scan_cb)
-        self.my_odom_sub = rospy.Subscriber('my_odom', Float32MultiArray, self.roba_my_odom_cb)
-        self.cmd_vel_pub = rospy.Publisher('cmd_vel', Twist, queue_size=1)
-
-        # Signal Related
+        self.move_base_status_sub = rospy.Subscriber('move_base/status', GoalStatusArray, self.move_base_status_cb)
+        self.move_base_goal_sub = rospy.Subscriber('move_base/goal', MoveBaseActionGoal, self.move_base_goal_cb)
+        self.move_base_goal_pub = rospy.Publisher('move_base/goal', MoveBaseActionGoal, queue_size=1)
+        self.move_base_cancel_pub = rospy.Publisher('move_base/cancel', GoalID, queue_size=1)
+        
         self.signal_sub = rospy.Subscriber('signal_sim', Bool, self.signal_cb)
-        self.cur_signal = False
-        self.close_to_signal = False
-        self.facing_signal = False
-
-        # Stop Sign Related
         self.stop_sign_sub = rospy.Subscriber('stop_sign_sim', Int32, self.stop_sign_cb)
-        self.stop_sign_pub = rospy.Publisher('stop_sign_sim', Int32, queue_size=1)
 
-        self.cur_cars_count = 0
-        self.stop_car_list = []
+        self.state = RobotState.IDLE
+        self.current_goal = None
+        self.saved_goal = None
+        self.current_signal_state = False
+        self.stop_sign_queue = []
+        self.at_traffic_control = False
 
-        self.close_to_stop_sign = False
-        self.facing_stop_sign = False
-        self.encountered = False
-        self.sleeped = False
-
-        # tf rostopic
         self.tf_buffer = tf2_ros.Buffer()
         self.tf_listener = tf2_ros.TransformListener(self.tf_buffer)
-        self.tf_broadcaster = tf2_ros.TransformBroadcaster()
+        
+        self.signal_distance_threshold = 0.5
+        self.signal_angle_threshold = math.pi/3
+        self.stop_sign_distance_threshold = 0.2
+        self.stop_sign_angle_threshold = math.pi/4
 
-        # Initialized Value
-        self.dist = 0.0
-        self.yaw = 0.0
+    def move_base_status_cb(self, msg):
+        if not msg.status_list:
+            return
+        latest_status = msg.status_list[-1]
+        if latest_status.status == 1:
+            self.state = RobotState.NAVIGATING
+        elif latest_status.status == 3:
+            self.state = RobotState.IDLE
+            self.at_traffic_control = False
 
-        # Call mapper_real.py - For SLAM demo
-        self.mapper = Mapper()
+    def move_base_goal_cb(self, msg):
+        self.current_goal = msg
 
     def signal_cb(self, msg):
-        """Callback to 'self.signal_sub'. """
-        self.cur_signal = msg.data
-    
+        self.current_signal_state = msg.data
+        if self.state == RobotState.AT_SIGNAL and self.current_signal_state:
+            self.resume_navigation()
+
     def stop_sign_cb(self, msg):
-        self.cur_cars_count = msg.data
-
-    def roba_my_odom_cb(self, msg):
-        """Callback to `self.my_odom_sub`."""
-        # msg.points[0] contains roba data
-        self.dist = msg.data[0]  # roba distance
-        self.yaw = msg.data[1]   # roba yaw
-        #raise NotImplementedError
-
-
-    def roba_scan_cb(self, msg):
-        """Callback function for `self.scan_sub`."""
-        #raise NotImplementedError
-
-    def move(self):
-        twist = Twist()
-        # Default Speed
-        twist.linear.x = 0.1     
-
-        #Dealing with signal (finished)
-        if (self.close_to_signal is True) and (self.facing_signal is True):
-            if self.cur_signal:
-                twist.linear.x = 0.2
-            else:
-                twist.linear.x = 0.0
-
-        #Dealing with STOP sign
-        if (self.close_to_stop_sign is True) and (self.facing_stop_sign is True):
-            if (self.encountered is False): # Stop for 1.5s when encounter a STOP sign
-                twist.linear.x = 0.0
-                self.encountered = True
-                # Add the car to list
-                self.cur_cars_count += 1
-                self.stop_car_list.append('roba')
-            else:
-                return # if still encountering stop sign, break the move(), go to stop_sign_helper()
-        else:
-            self.encountered = False
-            # Remove the car from list
-            if ('roba' in self.stop_car_list):
-                self.stop_car_list.remove('roba')
-                self.cur_cars_count -= 1
-                self.sleeped = False
-                
-        self.cmd_vel_pub.publish(twist)
-
-    def stop_sign_helper(self):
-            if (self.sleeped is False):
+        if self.state == RobotState.AT_STOP_SIGN:
+            if 'roba' not in self.stop_sign_queue:
+                self.stop_sign_queue.append('roba')
+            if self.stop_sign_queue[0] == 'roba':
                 rospy.sleep(1.5)
-                self.sleeped = True
-            twist = Twist()
+                self.stop_sign_queue.remove('roba')
+                self.resume_navigation()
 
-            if not (self.stop_car_list[0] == 'roba'):
-                twist.linear.x = 0.0
-            else:
-                twist.linear.x = 0.2
+    def check_traffic_controls(self):
+        if self.state != RobotState.NAVIGATING:
+            return
 
-            self.cmd_vel_pub.publish(twist)
+        signal_pos = self.get_pin_position(101)
+        if signal_pos:
+            x, y = signal_pos
+            signal_distance = math.sqrt(x**2 + y**2)
+            signal_angle = abs(math.atan2(y, x))
+            rospy.loginfo(f"Signal dist: {signal_distance:.2f}, angle: {signal_angle:.2f}, signal: {self.current_signal_state}")
+            
+            if signal_distance < self.signal_distance_threshold and signal_angle < self.signal_angle_threshold:
+                if not self.current_signal_state:  # Red light
+                    rospy.loginfo("Stopping at red signal")
+                    self.at_traffic_control = True
+                    self.pause_navigation(RobotState.AT_SIGNAL)
 
+        stop_pos = self.get_pin_position(100)
+        if stop_pos:
+            x, y = stop_pos
+            stop_distance = math.sqrt(x**2 + y**2)
+            stop_angle = abs(math.atan2(y, x))
+            rospy.loginfo(f"Stop dist: {stop_distance:.2f}, angle: {stop_angle:.2f}")
 
+            if stop_distance < self.stop_sign_distance_threshold and stop_angle < self.stop_sign_angle_threshold:
+                rospy.loginfo("Stopping at stop sign")
+                self.at_traffic_control = True
+                self.pause_navigation(RobotState.AT_STOP_SIGN)
 
-    def get_pin_to_robot_position(self, pin_id):
-        """Get x,y position of robot's base_link to pin_id frame"""
+    def get_pin_position(self, pin_id):
         try:
-            transform = self.tf_buffer.lookup_transform(
-                'base_link',
-                f'pin_{pin_id}', 
-                rospy.Time())
-            
-            x = transform.transform.translation.x
-            y = transform.transform.translation.y
-            
-            return x, y
-       
-        except (tf2_ros.LookupException,
-                tf2_ros.ConnectivityException,
-                tf2_ros.ExtrapolationException) as e:
+            transform = self.tf_buffer.lookup_transform('base_link', f'pin_{pin_id}', rospy.Time())
+            return transform.transform.translation.x, transform.transform.translation.y
+        except (tf2_ros.LookupException, tf2_ros.ConnectivityException, tf2_ros.ExtrapolationException):
             return None
 
-    def signal_notification(self, pin_id):
-        '''Let robot know when it is closing to one of the signal lights'''
-        dist = self.get_pin_to_robot_position(pin_id)
-        threshold = 0.2
-        if dist:
-            x, y = dist
-            #Detect whether is CLOSE to the pin
-            if ((x**2 + y**2) < 0.2): 
-                # The distance to the intersection
-                if (self.close_to_signal is False):
-                    self.close_to_signal = True
-            else:
-                self.close_to_signal = False
+    def pause_navigation(self, new_state):
+        if self.current_goal:
+            self.saved_goal = self.current_goal
+            cancel_msg = GoalID()
+            cancel_msg.id = self.current_goal.goal_id.id
+            self.move_base_cancel_pub.publish(cancel_msg)
+            self.state = new_state
 
-            #Detect whether is FACING the pin
-            angle = math.atan2(y, x)
-
-            if (abs(angle) < threshold):
-                if (self.facing_signal is False):
-                    self.facing_signal = True
-            else:
-                self.facing_signal = False
-
-    def stop_sign_notification(self, pin_id):
-        dist = self.get_pin_to_robot_position(pin_id)
-        threshold = 0.2
-        if dist:
-            x, y = dist
-            #Detect whether is CLOSE to the pin
-            rospy.loginfo(f"Fiducial {pin_id} is at x:{x:.2f}, y:{y:.2f}") 
-            if ((x**2 + y**2) < 0.2): 
-                # The distance to the intersection
-                if (self.close_to_stop_sign is False):
-                    self.close_to_stop_sign = True
-            else:
-                self.close_to_stop_sign = False
-
-            #Detect whether is FACING the pin
-            angle = math.atan2(y, x)
-
-            if (abs(angle) < threshold):
-                if (self.facing_stop_sign is False):
-                    self.facing_stop_sign = True
-            else:
-                self.facing_stop_sign = False
-
-                    
- 
+    def resume_navigation(self):
+        if self.saved_goal:
+            self.move_base_goal_pub.publish(self.saved_goal)
+            self.saved_goal = None
+            self.state = RobotState.NAVIGATING
+            self.at_traffic_control = False
 
     def run(self):
-        """Run the program."""
         rate = rospy.Rate(10)
         while not rospy.is_shutdown():
-            self.signal_notification(110)
-            self.stop_sign_notification(100)
-
-            if self.encountered and self.facing_stop_sign and self.close_to_stop_sign:
-                self.stop_sign_helper()
-            else:
-                self.move()
-
+            self.check_traffic_controls()
             rate.sleep()
-           
+
 if __name__ == '__main__':
-    rospy.init_node('four_way_solo')
-    FourWaySim().run()
-    rospy.spin()
+    rospy.init_node('navigation_controller')
+    NavigationController().run()
