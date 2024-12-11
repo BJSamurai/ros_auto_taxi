@@ -6,6 +6,7 @@ import tf
 from nav_msgs.msg import Path
 from geometry_msgs.msg import Twist, PoseStamped
 from tf.transformations import euler_from_quaternion
+from actionlib_msgs.msg import GoalStatusArray
 
 class PathOrientationTracker:
     def __init__(self):
@@ -19,13 +20,31 @@ class PathOrientationTracker:
                                         PoseStamped,
                                         self.goal_callback)
         
-        self.cmd_vel_pub = rospy.Publisher('/cmd_vel', Twist, queue_size=1)
+        # Change to cmd_vel_raw to match the remapping
+        self.cmd_vel_pub = rospy.Publisher('/cmd_vel_raw', Twist, queue_size=1)
+        
+        # Add subscriber to monitor navigation status
+        self.status_sub = rospy.Subscriber('move_base/status', 
+                                         GoalStatusArray, 
+                                         self.status_callback)
+        
         self.tf_listener = tf.TransformListener()
         
         self.target_yaw = None
         self.is_turning = False
         self.last_goal = None
         self.rate = rospy.Rate(10)
+        self.is_at_traffic_control = False
+        self.navigation_active = False
+        
+    def status_callback(self, msg):
+        """Monitor if we're actively navigating and not at traffic control"""
+        if not msg.status_list:
+            return
+        
+        status = msg.status_list[-1].status
+        # Status 1 means actively navigating
+        self.navigation_active = (status == 1)
         
     def get_current_yaw(self):
         try:
@@ -48,6 +67,10 @@ class PathOrientationTracker:
         return math.atan2(dy, dx)
         
     def turn_to_target(self):
+        # Don't turn if we're at a traffic control
+        if not self.navigation_active:
+            return True
+            
         current_yaw = self.get_current_yaw()
         if current_yaw is None or self.target_yaw is None:
             return False
@@ -82,7 +105,7 @@ class PathOrientationTracker:
             
             self.last_goal = goal_msg
             self.is_turning = True
-            print("\nNew goal received, initiating turn")
+            rospy.loginfo("New goal received, initiating turn")
         
     def path_callback(self, path_msg):
         if not self.is_turning or len(path_msg.poses) < 2:
@@ -93,13 +116,13 @@ class PathOrientationTracker:
         
         self.target_yaw = self.calculate_heading(start_point, next_point)
         
-        print("Target Yaw: {:.2f} radians ({:.2f} degrees)".format(
+        rospy.loginfo("Target Yaw: {:.2f} radians ({:.2f} degrees)".format(
             self.target_yaw, math.degrees(self.target_yaw)))
         
         while self.is_turning and not rospy.is_shutdown():
             if self.turn_to_target():
                 self.is_turning = False
-                print("Turning complete")
+                rospy.loginfo("Turning complete")
             self.rate.sleep()
 
 def main():
