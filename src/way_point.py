@@ -56,14 +56,16 @@ class WaypointManager:
         if not self.is_active:
             return
             
-        if self.current_waypoint_index <= len(self.waypoints):
+        if self.current_waypoint_index < len(self.waypoints):
             next_goal = self.waypoints[self.current_waypoint_index]
             next_goal.goal.target_pose.header.stamp = rospy.Time.now()
             self.move_base_goal_pub.publish(next_goal)
             rospy.loginfo(f"Navigating to waypoint {self.current_waypoint_index + 1}/{len(self.waypoints)}")
+        
         else:
-            rospy.loginfo("Completed all waypoints!")
-            self.is_active = False
+            rospy.loginfo("Completed all waypoints! ##Looping again for demo use.##")
+            self.current_waypoint_index = 0
+            self.send_next_waypoint()
 
     def check_waypoint_progress(self):
         """Check if current waypoint has been reached"""
@@ -118,7 +120,7 @@ if __name__ == '__main__':
         manager = WaypointManager()
         
         waypoints = [
-            [1.0, 0.0, 0.707, 0.707],  # x, y, orientation_z, orientation_w
+            [1.05, 0.0, 0.707, 0.707],  # x, y, orientation_z, orientation_w
             [1.0, -1.5, 0.707, 0.707],
             [1.0, -1.8, 1.0, 0.0],
             [1.0, -2.2, 1.0, 0.0],

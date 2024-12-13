@@ -16,14 +16,10 @@ class SignalSim:
     def signal_cb(self, msg):
         """Callback function for `odom_sub`."""
         self.cur_signal = msg.data
-        #self.publish_data(self.cur_signal)
 
     def timer_callback(self, event):
         """Timer callback function to toggle the signal every 10 seconds."""
-        # Toggle the current signal state
         self.cur_signal = not self.cur_signal
-
-        # Publish the toggled signal
         self.signal_pub.publish(self.cur_signal)
 
         # Log the published value
@@ -31,11 +27,8 @@ class SignalSim:
 
     def publish_data(self,cur_signal):
         """
-        Publish `self.dist` and `self.yaw` on the `signal` topic.
+        Publish Boolean value of Ture or False on the `signal` topic.
         """
-        # The `Point` object we create below is not used as a geometric point,
-        # but simply as a data container for `self.dist` and `self.yaw` so we can
-        # publish it on `signal`.
         signal_pub_holder = self.cur_signal
         signal_pub_holder = not signal_pub_holder
         self.signal_pub.publish(signal_pub_holder)
