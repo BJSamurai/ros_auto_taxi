@@ -27,7 +27,7 @@ class NavigationController:
         self.move_base_goal_pub = rospy.Publisher('move_base/goal', MoveBaseActionGoal, queue_size=1)
         self.move_base_cancel_pub = rospy.Publisher('move_base/cancel', GoalID, queue_size=1)
         
-        self.signal_sub = rospy.Subscriber('signal_sim', Bool, self.signal_cb)
+        self.signal_sub = rospy.Subscriber('traffic_signal', Bool, self.signal_cb)
         self.stop_sign_sub = rospy.Subscriber('stop_sign', Int32, self.stop_sign_cb)
         self.stop_sign_pub = rospy.Publisher('stop_sign', Int32, queue_size = 1)
 
@@ -263,5 +263,5 @@ class NavigationController:
             rate.sleep()
 
 if __name__ == '__main__':
-    rospy.init_node('navigation_controller')
+    rospy.init_node('taxi_controller_solo')
     NavigationController().run()

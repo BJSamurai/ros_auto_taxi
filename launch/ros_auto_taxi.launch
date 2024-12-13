@@ -17,7 +17,7 @@
   <!-- Preprocess odom msg, only keep essential data -->
   <node name="my_odom" pkg="ros_auto_taxi" type="my_odom_solo.py" output="screen" />
   <!-- Generate signal change -->
-  <node name="signal" pkg="ros_auto_taxi" type="signal.py" output="screen" />
+  <node name="traffic_signal" pkg="ros_auto_taxi" type="traffic_signal.py" output="screen" />
   <!-- Hold car quantity at stop sign -->
   <node name="stop_sign" pkg="ros_auto_taxi" type="stop_sign.py" output="screen" />
 

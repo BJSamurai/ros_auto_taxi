@@ -6,8 +6,8 @@ from std_msgs.msg import Bool
 
 class SignalSim:
     def __init__(self):
-        self.signal_sub = rospy.Subscriber('signal_sim', Bool, self.signal_cb)
-        self.signal_pub = rospy.Publisher('signal_sim', Bool, queue_size = 1)
+        self.signal_sub = rospy.Subscriber('traffic_signal', Bool, self.signal_cb)
+        self.signal_pub = rospy.Publisher('traffic_signal', Bool, queue_size = 1)
         self.cur_signal = False
 
         # Decide the signal interval
@@ -43,6 +43,6 @@ class SignalSim:
         #rospy.sleep(10)
 
 if __name__ == '__main__':
-    rospy.init_node('signal_sim')
+    rospy.init_node('traffic_signal')
     SignalSim()
     rospy.spin()

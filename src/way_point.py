@@ -6,6 +6,10 @@ from geometry_msgs.msg import PoseStamped
 from move_base_msgs.msg import MoveBaseActionGoal
 from actionlib_msgs.msg import GoalID
 
+# This function enable a demo list of location for robot to move
+# When the robot get close to the goal (ignore the orientation)
+# It will jump to next goal point
+
 class WaypointManager:
     def __init__(self):
         rospy.init_node('waypoint_manager')
@@ -30,7 +34,6 @@ class WaypointManager:
         """
         Set a list of waypoints for the robot to visit
         waypoint_list: list of [x, y, orientation_z, orientation_w]
-        Example: [[1.0, 0.0, 0.0, 1.0], [2.0, 2.0, 0.707, 0.707]]
         """
         self.waypoints = []
         self.current_waypoint_index = 0
@@ -53,7 +56,7 @@ class WaypointManager:
         if not self.is_active:
             return
             
-        if self.current_waypoint_index < len(self.waypoints):
+        if self.current_waypoint_index <= len(self.waypoints):
             next_goal = self.waypoints[self.current_waypoint_index]
             next_goal.goal.target_pose.header.stamp = rospy.Time.now()
             self.move_base_goal_pub.publish(next_goal)
@@ -105,7 +108,7 @@ class WaypointManager:
 
     def run(self):
         """Main run loop"""
-        rate = rospy.Rate(10)  # 10Hz
+        rate = rospy.Rate(10)
         while not rospy.is_shutdown():
             self.check_waypoint_progress()
             rate.sleep()
