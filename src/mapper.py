@@ -5,6 +5,8 @@ import tf2_ros
 from tf.transformations import quaternion_from_euler
 from geometry_msgs.msg import TransformStamped
 
+# This class generate pins based on odom for scanned fiducial objects, so that fiducials' x and y is recorded.
+
 class Mapper:
     """
     When an instance `m` of the `Mapper` class is `run`, for every fiducial with
@@ -79,6 +81,6 @@ if __name__ == '__main__':
     rospy.init_node('mapper')
     mapper = Mapper()
     # The ids of the fiducials the `Mapper` instance should map.
-    fid_ids = [110, 100, 109, 101]
+    fid_ids = [110, 107, 101, 105]
     mapper.set_pins(fid_ids)
     mapper.run()

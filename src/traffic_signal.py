@@ -4,6 +4,8 @@ import rospy
 import math
 from std_msgs.msg import Bool
 
+# This class provide a rostopic 'traffic_signal' which will change between True / False every 10 seconds
+
 class SignalSim:
     def __init__(self):
         self.signal_sub = rospy.Subscriber('traffic_signal', Bool, self.signal_cb)

@@ -7,6 +7,8 @@ from geometry_msgs.msg import Point
 from nav_msgs.msg import Odometry
 from tf.transformations import euler_from_quaternion
 
+# This class provide a rostopic that provide preprocessed odom data called 'my_odom'.
+
 class MyOdom:
     def __init__(self):
         self.odom_sub = rospy.Subscriber('odom', Odometry, self.odom_cb)

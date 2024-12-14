@@ -6,10 +6,6 @@ from geometry_msgs.msg import PoseStamped
 from move_base_msgs.msg import MoveBaseActionGoal
 from actionlib_msgs.msg import GoalID
 
-# This function enable a demo list of location for robot to move
-# When the robot get close to the goal (ignore the orientation)
-# It will jump to next goal point
-
 class WaypointManager:
     def __init__(self):
         rospy.init_node('waypoint_manager')
@@ -30,6 +26,37 @@ class WaypointManager:
         
         rospy.loginfo("WaypointManager initialized")
 
+    def load_waypoints_from_file(self, filepath):
+        """
+        Load waypoints from a text file
+        File format should be: x y orientation_z orientation_w
+        One waypoint per line, space-separated
+        """
+        try:
+            waypoint_list = []
+            with open(filepath, 'r') as file:
+                for line in file:
+                    # Skip empty lines and comments
+                    line = line.strip()
+                    if not line or line.startswith('#'):
+                        continue
+                    
+                    # Parse the line
+                    x, y, oz, ow = map(float, line.split())
+                    waypoint_list.append([x, y, oz, ow])
+            
+            if waypoint_list:
+                self.set_waypoints(waypoint_list)
+                rospy.loginfo(f"Successfully loaded {len(waypoint_list)} waypoints from {filepath}")
+            else:
+                rospy.logwarn("No valid waypoints found in file")
+                
+        except Exception as e:
+            rospy.logerr(f"Error loading waypoints from file: {e}")
+            return False
+        
+        return True
+
     def set_waypoints(self, waypoint_list):
         """
         Set a list of waypoints for the robot to visit
@@ -47,7 +74,6 @@ class WaypointManager:
             goal.goal.target_pose.pose.orientation.w = wp[3]
             self.waypoints.append(goal)
         
-        rospy.loginfo(f"Loaded {len(self.waypoints)} waypoints")
         self.is_active = True
         self.send_next_waypoint()
 
@@ -63,7 +89,7 @@ class WaypointManager:
             rospy.loginfo(f"Navigating to waypoint {self.current_waypoint_index + 1}/{len(self.waypoints)}")
         
         else:
-            rospy.loginfo("Completed all waypoints! ##Looping again for demo use.##")
+            rospy.loginfo("Completed all waypoints!")
             self.current_waypoint_index = 0
             self.send_next_waypoint()
 
@@ -119,20 +145,12 @@ if __name__ == '__main__':
     try:
         manager = WaypointManager()
         
-        waypoints = [
-            [1.05, 0.0, 0.707, 0.707],  # x, y, orientation_z, orientation_w
-            [1.0, -1.5, 0.707, 0.707],
-            [1.0, -1.8, 1.0, 0.0],
-            [1.0, -2.2, 1.0, 0.0],
-            [0.0, -2.2, 1.0, 0.0],
-            [0.0, -1.1, 0.0, 1.0],
-            [0.6, -1.1, 0.0, 1.0],
-            [1.0, -1.14, -0.707, 0.707],
-            [1.0, 0.0, 1.0, 0.0],
-            [0.0, 0.0, 0.0, 0.0]
-        ]
-        manager.set_waypoints(waypoints)
-        
+        # Load waypoints from file
+        waypoints_file = rospy.get_param('~waypoints_file', 'waypoints.txt')
+        if not manager.load_waypoints_from_file(waypoints_file):
+            rospy.logerr("Failed to load waypoints file")
+            exit(1)
+            
         manager.run()
     except rospy.ROSInterruptException:
         pass
