@@ -116,8 +116,11 @@ It will lead the robot to passenger position and take it back to start postition
 
 ## Story of the project. 
 My initial vision for this project was ambitious - I wanted to create a multi-robot system operating in a mapped road network. I imagined two robots coordinating to serve passengers, with the nearest robot responding to pickup requests. These robots would navigate while following traffic rules by recognizing Fiducial markers representing traffic signals and stop signs. They would also handle real-world scenarios like pedestrian crossings and yielding to emergency vehicles. However, as I delved deeper into the implementation, I realized that developing and coordinating two robots would be too complex for a solo project. This led me to strategically narrow my focus to perfecting a single robot's operation within the traffic system.
+
 For the navigation system, I considered two potential approaches. My primary plan utilized move_base with gmapping, which offered realistic navigation and flexibility in handling new destinations. I also kept a simpler backup plan using line or wall following algorithms in case the primary approach proved too challenging.
+
 As I progressed with the implementation, I encountered several technical hurdles. During the mapping phase, I discovered that gmapping's default parameters weren't well-suited for small environments. The system would scan distant objects too early, and noise significantly impacted the mapping quality. This led me to develop optimized parameters and compile troubleshooting tips, which I later documented in the FAQ section.
+
 The move_base implementation presented its own set of challenges, particularly in confined spaces like narrow mazes with approximately 20cm wide paths. The default path-finding algorithms, while effective in larger spaces like rooms, performed poorly in these tight conditions. I spent considerable time fine-tuning the system, which required understanding the complex relationships between costmap parameters, DWA planner settings, and move_base configurations. While these components operate independently, their effectiveness depends on careful synchronization - a challenge that proved both frustrating and enlightening as I worked to optimize the system's performance.
 
 ### Your own assessment
