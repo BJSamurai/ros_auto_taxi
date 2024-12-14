@@ -5,8 +5,11 @@ date: Dec 10 2024
 ---
 ## Introduction
 As autonomous driving technology rapidly advances and is being adopted by major electric vehicle companies, the future of transportation stands at a fascinating crossroads. This project aims to simulate aspects of autonomous driving systems using the Robot Operating System (ROS), drawing inspiration from real-world implementations and innovations.
+
 The project was particularly motivated by the growing presence of autonomous taxis in Seattle and mainland China, where companies are successfully deploying self-driving vehicles in complex urban environments. These real-world applications demonstrate the practical viability of autonomous systems and their potential to revolutionize urban mobility.
+
 A key inspiration for this project comes from Beijing's sophisticated traffic management system, which integrates real-time signal light information into navigation applications. This system provides drivers with precise timing data about traffic signals, including countdown information for red lights. This integration closely parallels ROS's topic-based communication architecture, making it an ideal candidate for simulation in a ROS environment.
+
 This project focuses on implementing three crucial features of autonomous driving systems:
 
 Autonomous navigation within a pre-mapped environment, emphasizing efficient path planning and execution
