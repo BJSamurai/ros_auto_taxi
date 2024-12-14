@@ -13,7 +13,9 @@ A key inspiration for this project comes from Beijing's sophisticated traffic ma
 This project focuses on implementing three crucial features of autonomous driving systems:
 
 Autonomous navigation within a pre-mapped environment, emphasizing efficient path planning and execution
+
 Intelligent interaction with traffic control elements, including stop signs and traffic signals
+
 A passenger service system that handles customer pickup and dropoff operations
 
 ## What was created
