@@ -3,12 +3,15 @@
 import rospy
 import math
 from std_msgs.msg import Float32MultiArray
-from geometry_msgs.msg import Point 
+from geometry_msgs.msg import Point
+from nav_msgs.msg import Odometry
 from tf.transformations import euler_from_quaternion
+
+# This class provide a rostopic that provide preprocessed odom data called 'my_odom'.
 
 class MyOdom:
     def __init__(self):
-        self.odom_sub = rospy.Subscriber('odom', Float32MultiArray, self.odom_cb)
+        self.odom_sub = rospy.Subscriber('odom', Odometry, self.odom_cb)
         self.my_odom_pub = rospy.Publisher('my_odom', Float32MultiArray, queue_size=1)
         self.old_pose = None 
         self.dist = 0.0

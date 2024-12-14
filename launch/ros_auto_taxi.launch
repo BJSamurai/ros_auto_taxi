@@ -1,0 +1,27 @@
+<launch>  
+
+  <!-- Fiducial Reader -->
+  <include file="$(find aruco_detect)/launch/aruco_detect.launch">
+      <param name="publish_images" value="true" />
+      <arg name="do_pose_estimation" value="true" />
+      <!-- Ensure vis_msgs is set to false, or it will return different type of viariable that cannot be used -->
+      <arg name="vis_msgs" value="false" /> 
+      <arg name="fiducial_len" value="0.14" />
+      <arg name="dictionary" value="7" />
+      <arg name="camera" value="raspicam_node" />
+      <arg name="image" value="image" />
+  </include>
+
+  <!-- Map the fiducial on map as pin -->
+  <node name="mapper" pkg="ros_auto_taxi" type="mapper.py" output="screen" />
+  <!-- Preprocess odom msg, only keep essential data -->
+  <node name="my_odom" pkg="ros_auto_taxi" type="my_odom_solo.py" output="screen" />
+  <!-- Generate signal change -->
+  <node name="traffic_signal" pkg="ros_auto_taxi" type="traffic_signal.py" output="screen" />
+  <!-- Hold car quantity at stop sign -->
+  <node name="stop_sign" pkg="ros_auto_taxi" type="stop_sign.py" output="screen" />
+
+  <!-- Main Controll Unit -->
+  <node name="taxi_controller_solo" pkg="ros_auto_taxi" type="taxi_solo.py" output="screen" />
+
+</launch>
