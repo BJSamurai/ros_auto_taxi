@@ -5,12 +5,17 @@ date: Dec 10 2024
 ---
 ## Introduction
 As autonomous driving technology rapidly advances and is being adopted by major electric vehicle companies, the future of transportation stands at a fascinating crossroads. This project aims to simulate aspects of autonomous driving systems using the Robot Operating System (ROS), drawing inspiration from real-world implementations and innovations.
+
 The project was particularly motivated by the growing presence of autonomous taxis in Seattle and mainland China, where companies are successfully deploying self-driving vehicles in complex urban environments. These real-world applications demonstrate the practical viability of autonomous systems and their potential to revolutionize urban mobility.
+
 A key inspiration for this project comes from Beijing's sophisticated traffic management system, which integrates real-time signal light information into navigation applications. This system provides drivers with precise timing data about traffic signals, including countdown information for red lights. This integration closely parallels ROS's topic-based communication architecture, making it an ideal candidate for simulation in a ROS environment.
+
 This project focuses on implementing three crucial features of autonomous driving systems:
 
 Autonomous navigation within a pre-mapped environment, emphasizing efficient path planning and execution
+
 Intelligent interaction with traffic control elements, including stop signs and traffic signals
+
 A passenger service system that handles customer pickup and dropoff operations
 
 ## What was created
@@ -116,8 +121,11 @@ It will lead the robot to passenger position and take it back to start postition
 
 ## Story of the project. 
 My initial vision for this project was ambitious - I wanted to create a multi-robot system operating in a mapped road network. I imagined two robots coordinating to serve passengers, with the nearest robot responding to pickup requests. These robots would navigate while following traffic rules by recognizing Fiducial markers representing traffic signals and stop signs. They would also handle real-world scenarios like pedestrian crossings and yielding to emergency vehicles. However, as I delved deeper into the implementation, I realized that developing and coordinating two robots would be too complex for a solo project. This led me to strategically narrow my focus to perfecting a single robot's operation within the traffic system.
+
 For the navigation system, I considered two potential approaches. My primary plan utilized move_base with gmapping, which offered realistic navigation and flexibility in handling new destinations. I also kept a simpler backup plan using line or wall following algorithms in case the primary approach proved too challenging.
+
 As I progressed with the implementation, I encountered several technical hurdles. During the mapping phase, I discovered that gmapping's default parameters weren't well-suited for small environments. The system would scan distant objects too early, and noise significantly impacted the mapping quality. This led me to develop optimized parameters and compile troubleshooting tips, which I later documented in the FAQ section.
+
 The move_base implementation presented its own set of challenges, particularly in confined spaces like narrow mazes with approximately 20cm wide paths. The default path-finding algorithms, while effective in larger spaces like rooms, performed poorly in these tight conditions. I spent considerable time fine-tuning the system, which required understanding the complex relationships between costmap parameters, DWA planner settings, and move_base configurations. While these components operate independently, their effectiveness depends on careful synchronization - a challenge that proved both frustrating and enlightening as I worked to optimize the system's performance.
 
 ### Your own assessment
